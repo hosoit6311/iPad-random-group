@@ -196,12 +196,6 @@
       line-height: 1.45;
     }
 
-    .mode-note {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
     .button-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -274,6 +268,7 @@
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       padding-bottom: 20px;
+      touch-action: pan-y;
     }
 
     .group-card {
@@ -339,6 +334,75 @@
       text-align: center;
     }
 
+    .board-exit {
+      display: none;
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      right: 10px;
+      z-index: 20;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    body.board-mode {
+      overflow: auto;
+    }
+
+    body.board-mode .app {
+      width: 100%;
+      padding: max(8px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    }
+
+    body.board-mode header,
+    body.board-mode .controls,
+    body.board-mode .message,
+    body.board-mode .copyright {
+      display: none;
+    }
+
+    body.board-mode .groups {
+      min-height: calc(100vh - 18px);
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      align-content: start;
+      padding-bottom: 0;
+    }
+
+    body.board-mode .group-card {
+      min-height: 118px;
+      padding: 14px;
+    }
+
+    body.board-mode .group-title {
+      font-size: 20px;
+    }
+
+    body.board-mode .group-count {
+      font-size: 13px;
+    }
+
+    body.board-mode .member {
+      min-height: 42px;
+      padding: 0 13px;
+      font-size: 24px;
+    }
+
+    body.board-mode .member .sex {
+      font-size: 13px;
+    }
+
+    body.board-mode .board-exit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     @media (max-width: 940px) {
       header { align-items: flex-start; flex-direction: column; }
       .top-actions { justify-content: flex-start; }
@@ -394,7 +458,6 @@
         </div>
         <div class="mode-block">
           <div class="mode-title">B. 性別ができるだけ均等になるように人数を割り振る</div>
-          <div class="mode-note">女子が少ない場合は、女子が1人だけのグループをできるだけ避けます。</div>
           <div class="button-row">
             <button class="action-btn primary" type="button" id="genderOrderedBtn">番号順</button>
             <button class="action-btn secondary" type="button" id="genderRandomBtn">ランダム</button>
@@ -416,6 +479,7 @@
 
     <div class="message" id="message">クラスと最低人数を確認して、AまたはBの方式を選んでください。</div>
     <main class="groups" id="groups"></main>
+    <button class="board-exit" type="button" id="boardExitBtn">設定</button>
     <footer class="copyright">Copyright HOSOI Toshikatsu</footer>
   </div>
 
@@ -436,7 +500,9 @@
     const skipNumbers = document.querySelector("#skipNumbers");
     const themeBtn = document.querySelector("#themeBtn");
     const exportBtn = document.querySelector("#exportBtn");
+    const boardExitBtn = document.querySelector("#boardExitBtn");
     let lastResult = null;
+    let pinchStartDistance = 0;
 
     function loadSetting(key, fallback) {
       try { return localStorage.getItem(key) || fallback; } catch (error) { return fallback; }
@@ -587,6 +653,7 @@
 
     function renderGroups(groups) {
       groupsEl.innerHTML = "";
+      document.body.classList.remove("board-mode");
       groups.forEach((members, index) => {
         const maleCount = members.filter((member) => member.sex === "M").length;
         const femaleCount = members.filter((member) => member.sex === "F").length;
@@ -799,6 +866,23 @@
       downloadCanvasAsJpg(canvas, `group-${lastResult.classId}-${formatFileDateTime(lastResult.createdAt)}.jpg`);
     }
 
+    function touchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function enterBoardMode() {
+      if (!lastResult) return;
+      document.body.classList.add("board-mode");
+      requestAnimationFrame(() => groupsEl.scrollIntoView({ block: "start" }));
+    }
+
+    function exitBoardMode() {
+      document.body.classList.remove("board-mode");
+      pinchStartDistance = 0;
+    }
+
     document.querySelectorAll(".class-btn").forEach((button) => {
       button.addEventListener("click", () => selectClass(button.dataset.classId));
     });
@@ -807,9 +891,30 @@
     document.querySelector("#genderOrderedBtn").addEventListener("click", () => generate("gender", false));
     document.querySelector("#genderRandomBtn").addEventListener("click", () => generate("gender", true));
     exportBtn.addEventListener("click", exportJpg);
+    boardExitBtn.addEventListener("click", exitBoardMode);
     themeBtn.addEventListener("click", () => setTheme(document.body.classList.contains("theme-light") ? "dark" : "light"));
     minSizeInput.addEventListener("change", () => saveSetting("ipad-group-min-size", minSizeInput.value));
     skipNumbers.addEventListener("change", () => saveSetting("ipad-group-skip", skipNumbers.value));
+    groupsEl.addEventListener("dblclick", enterBoardMode);
+    groupsEl.addEventListener("touchstart", (event) => {
+      if (event.touches.length === 2 && lastResult) {
+        pinchStartDistance = touchDistance(event.touches);
+      }
+    }, { passive: true });
+    groupsEl.addEventListener("touchmove", (event) => {
+      if (event.touches.length !== 2 || !pinchStartDistance || !lastResult) return;
+      const scale = touchDistance(event.touches) / pinchStartDistance;
+      if (scale > 1.12) {
+        event.preventDefault();
+        enterBoardMode();
+      } else if (scale < 0.82 && document.body.classList.contains("board-mode")) {
+        event.preventDefault();
+        exitBoardMode();
+      }
+    }, { passive: false });
+    groupsEl.addEventListener("touchend", () => {
+      pinchStartDistance = 0;
+    }, { passive: true });
 
     setTheme(loadSetting("ipad-group-theme", "dark"));
     minSizeInput.value = loadSetting("ipad-group-min-size", "3");
