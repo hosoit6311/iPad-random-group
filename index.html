@@ -45,7 +45,7 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
+    html, body { min-height: 100%; margin: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
@@ -111,7 +111,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: 1.2fr 1fr auto;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(360px, 1.4fr) minmax(170px, 0.55fr);
       gap: 12px;
       align-items: stretch;
       margin: 14px 0;
@@ -124,7 +124,8 @@
       box-shadow: var(--shadow);
     }
 
-    .control-panel {
+    .control-panel,
+    .action-panel {
       display: grid;
       gap: 12px;
       padding: 14px;
@@ -132,7 +133,7 @@
 
     .class-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(70px, 1fr));
+      grid-template-columns: repeat(4, minmax(58px, 1fr));
       gap: 8px;
     }
 
@@ -156,7 +157,7 @@
 
     .field-grid {
       display: grid;
-      grid-template-columns: 130px 1fr;
+      grid-template-columns: 120px 1fr;
       gap: 10px;
       align-items: center;
     }
@@ -179,11 +180,32 @@
       box-shadow: 0 0 0 3px rgba(200, 255, 90, 0.18);
     }
 
-    .action-panel {
+    .mode-block {
       display: grid;
-      grid-template-columns: repeat(3, minmax(110px, 1fr));
       gap: 8px;
-      padding: 14px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel2);
+    }
+
+    .mode-title {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .mode-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .action-btn.primary {
@@ -202,7 +224,7 @@
 
     .action-btn.export {
       border-color: var(--line);
-      background: var(--panel2);
+      background: var(--panel);
       color: var(--text);
       font-weight: 800;
     }
@@ -252,14 +274,6 @@
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       padding-bottom: 20px;
-    }
-
-    .copyright {
-      margin: 10px 0 0;
-      padding: 10px 0 2px;
-      color: var(--muted);
-      font-size: 13px;
-      text-align: center;
     }
 
     .group-card {
@@ -317,7 +331,15 @@
     .member.m .sex { color: var(--male); }
     .member.f .sex { color: var(--female); }
 
-    @media (max-width: 860px) {
+    .copyright {
+      margin: 10px 0 0;
+      padding: 10px 0 2px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 940px) {
       header { align-items: flex-start; flex-direction: column; }
       .top-actions { justify-content: flex-start; }
       .controls { grid-template-columns: 1fr; }
@@ -326,7 +348,7 @@
 
     @media (max-width: 520px) {
       .app { padding-left: 10px; padding-right: 10px; }
-      .class-grid, .action-panel, .field-grid { grid-template-columns: 1fr; }
+      .class-grid, .field-grid, .button-row { grid-template-columns: 1fr; }
       .groups { grid-template-columns: 1fr; }
     }
   </style>
@@ -336,7 +358,7 @@
     <header>
       <div>
         <h1>ランダムグループ生成</h1>
-        <div class="subtitle">iPadのSafariで使えるPWA版</div>
+        <div class="subtitle">最低人数を基準に、人数優先でグループを作ります</div>
       </div>
       <div class="top-actions">
         <button class="theme-btn" type="button" id="themeBtn">ライト</button>
@@ -353,8 +375,8 @@
           <button class="class-btn" type="button" data-class-id="14">14組</button>
         </div>
         <div class="field-grid">
-          <label for="numGroups">グループ数</label>
-          <input id="numGroups" type="number" min="1" value="6" inputmode="numeric">
+          <label for="minSize">最低人数</label>
+          <input id="minSize" type="number" min="1" value="3" inputmode="numeric">
         </div>
         <div class="field-grid">
           <label for="skipNumbers">除外番号</label>
@@ -363,8 +385,21 @@
       </div>
 
       <div class="panel action-panel">
-        <button class="action-btn primary" type="button" id="orderedBtn">番号順</button>
-        <button class="action-btn secondary" type="button" id="randomBtn">ランダム</button>
+        <div class="mode-block">
+          <div class="mode-title">A. 性別関係なく人数で割り振る</div>
+          <div class="button-row">
+            <button class="action-btn primary" type="button" id="countOrderedBtn">番号順</button>
+            <button class="action-btn secondary" type="button" id="countRandomBtn">ランダム</button>
+          </div>
+        </div>
+        <div class="mode-block">
+          <div class="mode-title">B. 性別ができるだけ均等になるように人数を割り振る</div>
+          <div class="mode-note">女子が少ない場合は、女子が1人だけのグループをできるだけ避けます。</div>
+          <div class="button-row">
+            <button class="action-btn primary" type="button" id="genderOrderedBtn">番号順</button>
+            <button class="action-btn secondary" type="button" id="genderRandomBtn">ランダム</button>
+          </div>
+        </div>
         <button class="action-btn export" type="button" id="exportBtn">JPG保存</button>
       </div>
 
@@ -379,7 +414,7 @@
       </div>
     </section>
 
-    <div class="message" id="message">クラスを選び、グループ数を入力して生成してください。</div>
+    <div class="message" id="message">クラスと最低人数を確認して、AまたはBの方式を選んでください。</div>
     <main class="groups" id="groups"></main>
     <footer class="copyright">Copyright HOSOI Toshikatsu</footer>
   </div>
@@ -397,7 +432,7 @@
     const groupsEl = document.querySelector("#groups");
     const message = document.querySelector("#message");
     const summary = document.querySelector("#summary");
-    const numGroups = document.querySelector("#numGroups");
+    const minSizeInput = document.querySelector("#minSize");
     const skipNumbers = document.querySelector("#skipNumbers");
     const themeBtn = document.querySelector("#themeBtn");
     const exportBtn = document.querySelector("#exportBtn");
@@ -450,7 +485,7 @@
           </div>
         </div>`;
       summary.textContent = `${currentClass}組 / ${nums.length}人`;
-      setMessage("条件を確認して生成してください。");
+      setMessage("クラスと最低人数を確認して、AまたはBの方式を選んでください。");
     }
 
     function shuffle(list) {
@@ -462,21 +497,6 @@
       return result;
     }
 
-    function distributeBalanced(maleList, femaleList, groupCount) {
-      const groups = Array.from({ length: groupCount }, () => []);
-      let index = 0;
-      maleList.forEach((num) => {
-        groups[index % groupCount].push({ num, sex: "M" });
-        index += 1;
-      });
-      index = 0;
-      femaleList.forEach((num) => {
-        groups[index % groupCount].push({ num, sex: "F" });
-        index += 1;
-      });
-      return groups.map((group) => group.sort((a, b) => a.num - b.num));
-    }
-
     function parseSkipNumbers() {
       return skipNumbers.value
         .split(/[,\s、]+/)
@@ -484,34 +504,89 @@
         .filter((value, index, array) => Number.isFinite(value) && array.indexOf(value) === index);
     }
 
-    function generate(randomize) {
-      const groupCount = Number.parseInt(numGroups.value, 10);
-      const roster = CLASS_DATA[currentClass];
-      const skip = parseSkipNumbers();
-      const active = numbersFor(currentClass).filter((num) => !skip.includes(num));
-      groupsEl.innerHTML = "";
-      lastResult = null;
+    function makeGroupSizes(total, minSize) {
+      const groupCount = Math.floor(total / minSize);
+      const extra = total - groupCount * minSize;
+      return Array.from({ length: groupCount }, (_, index) => {
+        return index >= groupCount - extra ? minSize + 1 : minSize;
+      });
+    }
 
-      if (!Number.isFinite(groupCount) || groupCount < 1) {
-        setMessage("グループ数を1以上で入力してください。", true);
-        return;
-      }
-      if (groupCount > active.length) {
-        setMessage("グループ数が対象人数より多くなっています。", true);
-        return;
-      }
+    function sortGroup(group) {
+      return group.sort((a, b) => a.num - b.num);
+    }
 
-      let maleList = active.filter((num) => roster[num] === "M");
+    function buildCountGroups(active, roster, sizes, randomize) {
+      let members = active.map((num) => ({ num, sex: roster[num] }));
+      if (randomize) members = shuffle(members);
+
+      let cursor = 0;
+      return sizes.map((size) => {
+        const group = members.slice(cursor, cursor + size);
+        cursor += size;
+        return sortGroup(group);
+      });
+    }
+
+    function chooseFemaleTargets(sizes, femaleCount) {
+      const total = sizes.reduce((sum, size) => sum + size, 0);
+      const ratio = total ? femaleCount / total : 0;
+      let dp = Array.from({ length: femaleCount + 1 }, () => null);
+      dp[0] = { score: 0, counts: [] };
+
+      sizes.forEach((size) => {
+        const next = Array.from({ length: femaleCount + 1 }, () => null);
+        dp.forEach((state, currentCount) => {
+          if (!state) return;
+          const maxFemale = Math.min(size, femaleCount - currentCount);
+          for (let f = 0; f <= maxFemale; f += 1) {
+            const nextCount = currentCount + f;
+            const groupRatio = size ? f / size : 0;
+            const singlePenalty = f === 1 ? 100000 : 0;
+            const balancePenalty = Math.pow(groupRatio - ratio, 2) * 100;
+            const score = state.score + singlePenalty + balancePenalty;
+            if (!next[nextCount] || score < next[nextCount].score) {
+              next[nextCount] = { score, counts: [...state.counts, f] };
+            }
+          }
+        });
+        dp = next;
+      });
+
+      return dp[femaleCount] ? dp[femaleCount].counts : sizes.map(() => 0);
+    }
+
+    function buildGenderGroups(active, roster, sizes, randomize) {
       let femaleList = active.filter((num) => roster[num] === "F");
+      let maleList = active.filter((num) => roster[num] === "M");
       if (randomize) {
-        maleList = shuffle(maleList);
         femaleList = shuffle(femaleList);
+        maleList = shuffle(maleList);
       }
 
-      const groups = distributeBalanced(maleList, femaleList, groupCount);
-      const createdAt = new Date();
-      lastResult = { classId: currentClass, groupCount, activeCount: active.length, skip, groups, mode: randomize ? "ランダム" : "番号順", createdAt };
+      const femaleTargets = chooseFemaleTargets(sizes, femaleList.length);
+      let femaleCursor = 0;
+      let maleCursor = 0;
 
+      return sizes.map((size, index) => {
+        const group = [];
+        const femaleNeeded = femaleTargets[index];
+        const maleNeeded = size - femaleNeeded;
+
+        for (let i = 0; i < femaleNeeded; i += 1) {
+          group.push({ num: femaleList[femaleCursor], sex: "F" });
+          femaleCursor += 1;
+        }
+        for (let i = 0; i < maleNeeded; i += 1) {
+          group.push({ num: maleList[maleCursor], sex: "M" });
+          maleCursor += 1;
+        }
+        return sortGroup(group);
+      });
+    }
+
+    function renderGroups(groups) {
+      groupsEl.innerHTML = "";
       groups.forEach((members, index) => {
         const maleCount = members.filter((member) => member.sex === "M").length;
         const femaleCount = members.filter((member) => member.sex === "F").length;
@@ -521,9 +596,10 @@
         card.innerHTML = `
           <div class="group-head">
             <div class="group-title">Group ${index + 1}</div>
-            <div class="group-count">M:${maleCount} F:${femaleCount}</div>
+            <div class="group-count">${members.length}人 / M:${maleCount} F:${femaleCount}</div>
           </div>
           <div class="members"></div>`;
+
         const membersEl = card.querySelector(".members");
         members.forEach((member) => {
           const chip = document.createElement("span");
@@ -533,10 +609,59 @@
         });
         groupsEl.appendChild(card);
       });
+    }
 
+    function generate(strategy, randomize) {
+      const minSize = Number.parseInt(minSizeInput.value, 10);
+      const roster = CLASS_DATA[currentClass];
+      const skip = parseSkipNumbers();
+      const active = numbersFor(currentClass).filter((num) => !skip.includes(num));
+      groupsEl.innerHTML = "";
+      lastResult = null;
+
+      if (!Number.isFinite(minSize) || minSize < 1) {
+        setMessage("最低人数を1以上で入力してください。", true);
+        return;
+      }
+      if (active.length < 1) {
+        setMessage("対象人数が0人です。除外番号を確認してください。", true);
+        return;
+      }
+      if (minSize > active.length) {
+        setMessage("最低人数が対象人数より多くなっています。", true);
+        return;
+      }
+
+      const sizes = makeGroupSizes(active.length, minSize);
+      const groups = strategy === "gender"
+        ? buildGenderGroups(active, roster, sizes, randomize)
+        : buildCountGroups(active, roster, sizes, randomize);
+      const createdAt = new Date();
+      const strategyLabel = strategy === "gender"
+        ? "B 性別均等"
+        : "A 人数優先";
+      const modeLabel = `${strategyLabel} / ${randomize ? "ランダム" : "番号順"}`;
+
+      lastResult = {
+        classId: currentClass,
+        minSize,
+        groupCount: groups.length,
+        activeCount: active.length,
+        skip,
+        groups,
+        mode: modeLabel,
+        createdAt
+      };
+
+      renderGroups(groups);
+      const minGroups = groups.filter((group) => group.length === minSize).length;
+      const plusGroups = groups.length - minGroups;
+      const sizeText = plusGroups
+        ? `${minSize}人グループ ${minGroups} / ${minSize + 1}人グループ ${plusGroups}`
+        : `${minSize}人グループ ${minGroups}`;
       const skipped = skip.length ? ` / 除外 ${skip.join(", ")}` : "";
-      setMessage(`${active.length}人を${groupCount}グループに分けました${skipped}。`);
-      summary.textContent = `${currentClass}組 / 対象 ${active.length}人`;
+      setMessage(`${active.length}人を最低${minSize}人で分けました（${sizeText}）${skipped}。`);
+      summary.textContent = `${currentClass}組 / 対象 ${active.length}人 / ${groups.length}グループ`;
     }
 
     function formatDateTime(date) {
@@ -580,7 +705,7 @@
 
     function exportJpg() {
       if (!lastResult) {
-        setMessage("先に番号順またはランダムでグループを生成してください。", true);
+        setMessage("先にAまたはBの方式でグループを生成してください。", true);
         return;
       }
 
@@ -599,8 +724,8 @@
       const cardWidth = 420;
       const gap = 24;
       const margin = 42;
-      const headerHeight = 138;
-      const cardHeights = lastResult.groups.map((group) => 86 + Math.ceil(group.length / 6) * 46);
+      const headerHeight = 150;
+      const cardHeights = lastResult.groups.map((group) => 88 + Math.ceil(group.length / 6) * 46);
       const rows = [];
       for (let i = 0; i < cardHeights.length; i += cols) {
         rows.push(Math.max(...cardHeights.slice(i, i + cols)));
@@ -621,8 +746,9 @@
       ctx.fillText("ランダムグループ生成", margin, margin + 42);
       ctx.fillStyle = muted;
       ctx.font = "500 22px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(`${lastResult.classId}組 / ${lastResult.mode} / ${lastResult.activeCount}人 / ${lastResult.groupCount}グループ`, margin, margin + 78);
-      ctx.fillText(`作成日時: ${formatDateTime(lastResult.createdAt)}`, margin, margin + 110);
+      ctx.fillText(`${lastResult.classId}組 / ${lastResult.mode}`, margin, margin + 78);
+      ctx.fillText(`${lastResult.activeCount}人 / 最低${lastResult.minSize}人 / ${lastResult.groupCount}グループ`, margin, margin + 110);
+      ctx.fillText(`作成日時: ${formatDateTime(lastResult.createdAt)}`, margin, margin + 140);
 
       let y = margin + headerHeight;
       lastResult.groups.forEach((group, index) => {
@@ -648,7 +774,7 @@
         ctx.fillText(`Group ${index + 1}`, x + 18, y + 42);
         ctx.fillStyle = muted;
         ctx.font = "700 18px -apple-system, BlinkMacSystemFont, sans-serif";
-        ctx.fillText(`M:${mCount} F:${fCount}`, x + cardWidth - 100, y + 42);
+        ctx.fillText(`${group.length}人 M:${mCount} F:${fCount}`, x + cardWidth - 150, y + 42);
 
         group.forEach((member, memberIndex) => {
           const chipX = x + 18 + (memberIndex % 6) * 64;
@@ -669,22 +795,24 @@
 
       ctx.fillStyle = accent;
       ctx.font = "700 16px -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText("Generated by iPad Random Group Maker", margin, height - 18);
+      ctx.fillText("Copyright HOSOI Toshikatsu", margin, height - 18);
       downloadCanvasAsJpg(canvas, `group-${lastResult.classId}-${formatFileDateTime(lastResult.createdAt)}.jpg`);
     }
 
     document.querySelectorAll(".class-btn").forEach((button) => {
       button.addEventListener("click", () => selectClass(button.dataset.classId));
     });
-    document.querySelector("#orderedBtn").addEventListener("click", () => generate(false));
-    document.querySelector("#randomBtn").addEventListener("click", () => generate(true));
+    document.querySelector("#countOrderedBtn").addEventListener("click", () => generate("count", false));
+    document.querySelector("#countRandomBtn").addEventListener("click", () => generate("count", true));
+    document.querySelector("#genderOrderedBtn").addEventListener("click", () => generate("gender", false));
+    document.querySelector("#genderRandomBtn").addEventListener("click", () => generate("gender", true));
     exportBtn.addEventListener("click", exportJpg);
     themeBtn.addEventListener("click", () => setTheme(document.body.classList.contains("theme-light") ? "dark" : "light"));
-    numGroups.addEventListener("change", () => saveSetting("ipad-group-num-groups", numGroups.value));
+    minSizeInput.addEventListener("change", () => saveSetting("ipad-group-min-size", minSizeInput.value));
     skipNumbers.addEventListener("change", () => saveSetting("ipad-group-skip", skipNumbers.value));
 
     setTheme(loadSetting("ipad-group-theme", "dark"));
-    numGroups.value = loadSetting("ipad-group-num-groups", "6");
+    minSizeInput.value = loadSetting("ipad-group-min-size", "3");
     skipNumbers.value = loadSetting("ipad-group-skip", "");
     selectClass(currentClass);
 

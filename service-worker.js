@@ -1,4 +1,4 @@
-const CACHE_NAME = "ipad-random-group-v1";
+const CACHE_NAME = "ipad-random-group-v2";
 const APP_FILES = [
   "./",
   "./index.html",
